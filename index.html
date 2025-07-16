@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Femboy Clicker Beta</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #f0f8ff, #e6e6fa);
+            color: #333;
+            text-align: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Styles génériques pour les écrans */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex; /* Utilisé pour centrer le contenu */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000; /* Valeur de base, ajustée pour les superpositions */
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+            background: linear-gradient(135deg, #e6e6fa, #f0f8ff); /* Fond par défaut */
+        }
+
+        /* État caché des écrans */
+        .screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none; /* Empêche les interactions quand caché */
+        }
+
+        /* Z-index spécifiques */
+        #titleScreen { z-index: 9999; }
+        #creditsScreen {
+            z-index: 9998;
+            background: rgba(255, 255, 255, 0.95); /* Fond semi-transparent pour les crédits */
+            padding: 20px;
+        }
+        #gameContainer {
+            z-index: 9997;
+            background-color: #fff;
+            padding: 30px 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            max-width: 550px;
+            width: 90%;
+            border: 1px solid #ddd;
+            position: relative; /* Ajusté pour le jeu */
+            overflow: hidden;
+            display: none; /* Caché par default, sera 'flex' quand visible */
+        }
+        #shopOverlay, #masteryOverlay {
+            z-index: 9990;
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        /* --- Écran Titre Styles Spécifiques --- */
+        #titleScreen h1 {
+            font-size: 4em;
+            color: #ff69b4;
+            margin-bottom: 30px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 2;
+        }
+
+        #titleScreen img {
+            max-width: 300px;
+            height: auto;
+            margin-bottom: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            animation: floatUpDown 3s ease-in-out infinite alternate;
+            position: relative;
+            z-index: 2;
+        }
+
+        @keyframes floatUpDown {
+            0% { transform: translateY(0px); }
+            100% { transform: translateY(-15px); }
+        }
+
+        /* Effet de nuage en arrière-plan */
+        .cloud {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.7;
+            filter: blur(8px);
+            animation: moveCloud 20s linear infinite;
+            z-index: 1;
+        }
+
+        .cloud.small { width: 80px; height: 80px; animation-duration: 25s; }
+        .cloud.medium { width: 120px; height: 120px; animation-duration: 20s; }
+        .cloud.large { width: 150px; height: 150px; animation-duration: 30s; }
+
+        @keyframes moveCloud {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(200%); }
+        }
+
+        .start-buttons {
+            display: flex;
+            gap: 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .play-button, .credits-button {
+            background-color: #8a2be2;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.5em;
+            border-radius: 50px;
+            cursor: pointer;
+            outline: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .play-button:hover, .credits-button:hover {
+            background-color: #9932cc;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .play-button:active, .credits-button:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Reset Button */
+        .reset-button {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background-color: #f44336; /* Red color */
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1em;
+            border-radius: 25px;
+            cursor: pointer;
+            outline: none;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .reset-button:hover {
+            background-color: #d32f2f;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .reset-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Confirmation Popup */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .popup-overlay.visible {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .popup-content {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .popup-overlay.visible .popup-content {
+            transform: scale(1);
+        }
+
+        .popup-content h3 {
+            color: #ff69b4;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .popup-content p {
+            color: #555;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .popup-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .popup-buttons button {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .popup-buttons .confirm-button {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .popup-buttons .confirm-button:hover {
+            background-color: #d32f2f;
+            transform: translateY(-2px);
+        }
+
+        .popup-buttons .cancel-button {
+            background-color: #ccc;
+            color: #333;
+        }
+
+        .popup-buttons .cancel-button:hover {
+            background-color: #bbb;
+            transform: translateY(-2px);
+        }
+
+        /* --- Écran Crédits Styles Spécifiques --- */
+        #creditsScreen h2 {
+            font-size: 3em;
+            color: #ff69b4;
+            margin-bottom: 20px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        #creditsScreen p {
+            font-size: 1.2em;
+            color: #555;
+            max-width: 600px;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+
+        #creditsScreen .back-button {
+            background-color: #8a2be2;
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            font-size: 1.2em;
+            border-radius: 30px;
+            cursor: pointer;
+            outline: none;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        #creditsScreen .back-button:hover {
+            background-color: #9932cc;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* --- Conteneur Principal du Jeu Styles Spécifiques --- */
+        h1 {
+            color: #ff69b4;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
+        }
+
+        #counter {
+            font-size: 3.5em;
+            color: #8a2be2;
+            margin-bottom: 25px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .click-button {
+            background-color: #ffb6c1;
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            font-size: 1.6em;
+            border-radius: 50px;
+            cursor: pointer;
+            outline: none;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .click-button:hover {
+            background-color: #ff69b4;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 18px rgba(0, 0, 0, 0.2);
+        }
+
+        .click-button:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .click-animation {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: clickEffect 0.6s ease-out;
+            pointer-events: none;
+        }
+
+        @keyframes clickEffect {
+            to {
+                transform: scale(2.5);
+                opacity: 0;
+            }
+        }
+
+        /* --- Effets visuels supplémentaires --- */
+        .sparkle {
+            position: absolute;
+            background-color: rgba(255, 255, 0, 0.8);
+            border-radius: 50%;
+            opacity: 0;
+            animation: sparkleEffect 0.8s forwards;
+            pointer-events: none;
+            z-index: 1001;
+            box-shadow: 0 0 5px rgba(255, 255, 0, 0.5);
+        }
+
+        @keyframes sparkleEffect {
+            0% { opacity: 1; transform: scale(0.2); }
+            50% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0); }
+        }
+
+        .particle {
+            position: absolute;
+            background-color: #ff69b4;
+            border-radius: 50%;
+            opacity: 0;
+            animation: fadeOutUp 1s forwards;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        @keyframes fadeOutUp {
+            from {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.5);
+            }
+        }
+
+        .message {
+            margin-top: 25px;
+            font-size: 1em;
+            color: #666;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            background-color: #eee;
+            border-radius: 5px;
+            margin-top: 20px;
+            height: 18px;
+            overflow: hidden;
+            border: 1px solid #ccc;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: #8a2be2;
+            border-radius: 5px;
+            text-align: center;
+            color: white;
+            font-size: 0.75em;
+            line-height: 18px;
+            transition: width 0.3s ease-out;
+        }
+
+        #levelInfo {
+            font-size: 0.9em;
+            margin-top: 8px;
+            color: #555;
+        }
+
+        /* Boutons en jeu */
+        .game-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px; /* Spacing between buttons */
+            margin-top: 20px;
+        }
+
+        #shopButton, #masteryButton {
+            background-color: #20b2aa;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.2em;
+            border-radius: 30px;
+            cursor: pointer;
+            outline: none;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        #shopButton:hover, #masteryButton:hover {
+            background-color: #219d92;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        #shopButton:active, #masteryButton:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+
+
+        .shop-content, .mastery-content {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+            transform: translateY(20px);
+            transition: transform 0.3s ease-out;
+            overflow-y: auto; /* Permet le défilement si trop d'items */
+            max-height: 90vh; /* Limite la hauteur du shop */
+        }
+
+        #shopOverlay:not(.hidden) .shop-content,
+        #masteryOverlay:not(.hidden) .mastery-content { /* Utilise :not(.hidden) pour cibler quand visible */
+            transform: translateY(0);
+        }
+
+        .shop-content h2, .mastery-content h2 {
+            color: #ff69b4;
+            margin-bottom: 25px;
+            font-size: 2em;
+        }
+
+        .shop-item, .mastery-item {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-align: left;
+        }
+
+        .shop-item-info h3, .mastery-item-info h3 {
+            margin: 0 0 3px 0;
+            color: #8a2be2;
+            font-size: 1.1em;
+        }
+
+        .shop-item-info p, .mastery-item-info p {
+            margin: 0;
+            font-size: 0.85em;
+            color: #555;
+        }
+
+        .shop-item-buy button, .mastery-item-buy button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .shop-item-buy button:hover:not(:disabled), .mastery-item-buy button:hover:not(:disabled) {
+            background-color: #45a049;
+        }
+
+        .shop-item-buy button:disabled, .mastery-item-buy button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .close-shop-button, .close-mastery-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 1.8em;
+            color: #aaa;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .close-shop-button:hover, .close-mastery-button:hover {
+            color: #ff0000;
+        }
+
+        .level-up-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            border: 3px solid #ff69b4;
+            padding: 20px 40px;
+            border-radius: 10px;
+            font-size: 2em;
+            font-weight: bold;
+            color: #8a2be2;
+            z-index: 2000;
+            opacity: 0;
+            animation: fadeInOut 2s ease-out forwards;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2); }
+        }
+
+        /* --- Animation de fond (étoiles) --- */
+        .star {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            box-shadow: 0 0 5px 2px rgba(255, 255, 255, 0.5);
+            animation: twinkle 5s infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.5; transform: scale(0.5); }
+            50% { opacity: 1; transform: scale(1); }
+        }
+
+        /* Mastery System Specific Styles */
+        #masteryPointsDisplay {
+            font-size: 1.2em;
+            color: #ff8c00;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="titleScreen" class="screen">
+        <img src="image.png" alt="Welcome Image" onerror="this.style.display='none'">
+        <div class="cloud small" style="top: 20%; left: -10%;"></div>
+        <div class="cloud medium" style="top: 50%; left: -30%;"></div>
+        <div class="cloud large" style="top: 80%; left: -50%;"></div>
+        <h1>💖 Femboy Clicker 💖</h1>
+        <div class="start-buttons">
+            <button class="play-button" onclick="startGame()">Start Playing</button>
+            <button class="credits-button" onclick="showCredits()">Credits</button>
+        </div>
+        <button class="reset-button" onclick="showResetConfirmation()">Reset Progression</button>
+
+
+    </div>
+
+    <div id="creditsScreen" class="screen hidden">
+        <h2>Credits</h2>
+        <p>
+            why tf did i make this 🥀💀<br><br>
+            <strong>Website:</strong> Loann (@notloann)<br>
+            <strong>Website Idea:</strong> Sol (w website ikr)<br>
+            <strong>Images:</strong> idk<br><br>
+            Thanks for playing!<br>
+            "Dédicace à Bifurlo" - Loann<br><br><br>
+            You are playing: <strong>femboy-clicker-beta-0.5</strong>
+        </p>
+        <button class="back-button" onclick="hideCredits()">Back</button>
+    </div>
+
+    <div class="game-container screen hidden" id="gameContainer">
+        <h1>💖 Femboy Clicker 💖</h1>
+        <div id="counter">0</div>
+        <button class="click-button" id="clickButton">Click Me!</button>
+        <p class="message" id="message">Every click adds sparkle! ✨</p>
+
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <p id="levelInfo">Level 1 (0 / 100)</p>
+
+        <div class="game-buttons">
+            <button id="shopButton">Open Shop</button>
+            <button id="masteryButton">Masteries</button>
+        </div>
+
+        <div id="levelUpMessage" class="level-up-message" style="display: none;"></div>
+    </div>
+
+    <div id="shopOverlay" class="screen hidden">
+        <div class="shop-content">
+            <button class="close-shop-button" onclick="hideShop()">&times;</button>
+            <h2>✨ The Upgrades Shop ✨</h2>
+            <div class="shop-item" id="doubleClickItem">
+                <div class="shop-item-info">
+                    <h3>Double Click</h3>
+                    <p>Each click is worth +1 sparkle. Cost: <span id="doubleClickCost"></span> sparkles.</p>
+                </div>
+                <div class="shop-item-buy">
+                    <button id="buyDoubleClick">Buy (<span id="doubleClickCount">0</span>)</button>
+                </div>
+            </div>
+
+            <div class="shop-item" id="superBoostItem">
+                <div class="shop-item-info">
+                    <h3>Super Boost</h3>
+                    <p>Increases all gains by 10%. Cost: <span id="superBoostCost"></span> sparkles.</p>
+                </div>
+                <div class="shop-item-buy">
+                    <button id="buySuperBoost">Buy (<span id="superBoostCount">0</span>)</button>
+                </div>
+            </div>
+
+            <div class="shop-item" id="sparklingAuraItem">
+                <div class="shop-item-info">
+                    <h3>Sparkling Aura</h3>
+                    <p>Increases XP gain per click by 50%. Cost: <span id="sparklingAuraCost"></span> sparkles.</p>
+                </div>
+                <div class="shop-item-buy">
+                    <button id="buySparklingAura">Buy</button>
+                </div>
+            </div>
+
+            <div class="shop-item" id="ultimateFemboyOutfitItem">
+                <div class="shop-item-info">
+                    <h3>Ultimate Femboy Outfit</h3>
+                    <p>Increases base click gain by +5 per click. Cost: <span id="ultimateFemboyOutfitCost"></span> sparkles.</p>
+                </div>
+                <div class="shop-item-buy">
+                    <button id="buyUltimateFemboyOutfit">Buy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="masteryOverlay" class="screen hidden">
+        <div class="mastery-content">
+            <button class="close-mastery-button" onclick="hideMastery()">&times;</button>
+            <h2>🌟 Mastery Tree 🌟</h2>
+            <p id="masteryPointsDisplay">Mastery Points: 0</p>
+
+            <div class="mastery-item" id="sparkleEfficiencyMastery">
+                <div class="mastery-item-info">
+                    <h3>Sparkle Efficiency (Lvl <span id="sparkleEfficiencyLevel">0</span>)</h3>
+                    <p>Increases base click power by +0.1 per level. Cost: 1 Mastery Point.</p>
+                </div>
+                <div class="mastery-item-buy">
+                    <button id="buySparkleEfficiency">Upgrade</button>
+                </div>
+            </div>
+
+            <div class="mastery-item" id="xpAccumulationMastery">
+                <div class="mastery-item-info">
+                    <h3>XP Accumulation (Lvl <span id="xpAccumulationLevel">0</span>)</h3>
+                    <p>Increases XP gain by +5% per level. Cost: 1 Mastery Point.</p>
+                </div>
+                <div class="mastery-item-buy">
+                    <button id="buyXpAccumulation">Upgrade</button>
+                </div>
+            </div>
+
+            <div class="mastery-item" id="superSparkleChanceMastery">
+                <div class="mastery-item-info">
+                    <h3>Super Sparkle Chance (Lvl <span id="superSparkleChanceLevel">0</span>)</h3>
+                    <p>Adds a small chance for bonus sparkles on click. Cost: 2 Mastery Points.</p>
+                </div>
+                <div class="mastery-item-buy">
+                    <button id="buySuperSparkleChance">Upgrade</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="resetConfirmationPopup" class="popup-overlay">
+        <div class="popup-content">
+            <h3>oww ;3 r u sure abt that?</h3>
+            <p>you are going to lose all data saved into your browser localstorage, which means that you'll have to start over from zero. this action is irreversible.</p>
+            <div class="popup-buttons">
+                <button class="confirm-button" onclick="resetGame()">reset!!</button>
+                <button class="cancel-button" onclick="hideResetConfirmation()">nuh uh</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Game Variables ---
+        let count = 0;
+        let clickPower = 1;
+        let doubleClickMultipliers = 0;
+        let doubleClickBaseCost = 50;
+        let superBoosts = 0;
+        let superBoostBaseCost = 500;
+        let totalBoostMultiplier = 1;
+
+        let level = 1;
+        let experience = 0;
+        let xpToNextLevel = 100;
+
+        let hasSparklingAura = false;
+        let sparklingAuraCost = 20000;
+        let hasUltimateFemboyOutfit = false;
+        let ultimateFemboyOutfitCost = 50000;
+
+        // Mastery System Variables
+        let masteryPoints = 0;
+        let sparkleEfficiencyLevel = 0;
+        let xpAccumulationLevel = 0;
+        let superSparkleChanceLevel = 0;
+        let lastMasteryLevelAwarded = 0; // To track when to award new mastery points based on level
+        const MASTERY_POINT_LEVEL_INTERVAL = 10; // Award 1 mastery point every 10 levels
+
+        // --- DOM Element References ---
+        const titleScreen = document.getElementById('titleScreen');
+        const creditsScreen = document.getElementById('creditsScreen');
+        const gameContainer = document.getElementById('gameContainer');
+        const shopOverlay = document.getElementById('shopOverlay');
+        const masteryOverlay = document.getElementById('masteryOverlay');
+        const counterElement = document.getElementById('counter');
+        const clickButton = document.getElementById('clickButton');
+        const messageElement = document.getElementById('message');
+        const progressBar = document.getElementById('progressBar');
+        const levelInfo = document.getElementById('levelInfo');
+        const levelUpMessage = document.getElementById('levelUpMessage');
+        const shopButton = document.getElementById('shopButton');
+        const masteryButton = document.getElementById('masteryButton');
+        const resetConfirmationPopup = document.getElementById('resetConfirmationPopup');
+
+        // Shop Items
+        const doubleClickCostElement = document.getElementById('doubleClickCost');
+        const doubleClickCountElement = document.getElementById('doubleClickCount');
+        const buyDoubleClickButton = document.getElementById('buyDoubleClick');
+
+        const superBoostCostElement = document.getElementById('superBoostCost');
+        const superBoostCountElement = document.getElementById('superBoostCount');
+        const buySuperBoostButton = document.getElementById('buySuperBoost');
+
+        const sparklingAuraCostElement = document.getElementById('sparklingAuraCost');
+        const buySparklingAuraButton = document.getElementById('buySparklingAura');
+
+        const ultimateFemboyOutfitCostElement = document.getElementById('ultimateFemboyOutfitCost');
+        const buyUltimateFemboyOutfitButton = document.getElementById('buyUltimateFemboyOutfit');
+
+        // Mastery Elements
+        const masteryPointsDisplay = document.getElementById('masteryPointsDisplay');
+
+        const sparkleEfficiencyLevelElement = document.getElementById('sparkleEfficiencyLevel');
+        const buySparkleEfficiencyButton = document.getElementById('buySparkleEfficiency');
+
+        const xpAccumulationLevelElement = document.getElementById('xpAccumulationLevel');
+        const buyXpAccumulationButton = document.getElementById('buyXpAccumulation');
+
+        const superSparkleChanceLevelElement = document.getElementById('superSparkleChanceLevel');
+        const buySuperSparkleChanceButton = document.getElementById('buySuperSparkleChance');
+
+
+        // --- Screen Display Management Functions ---
+        function showScreen(screenElement, displayType = 'flex') {
+            screenElement.style.display = displayType; // Set display type before making it visible
+            setTimeout(() => {
+                screenElement.classList.remove('hidden');
+            }, 10); // Small delay to ensure display property is applied before transition
+        }
+
+        function hideScreen(screenElement) {
+            screenElement.classList.add('hidden');
+            screenElement.addEventListener('transitionend', function handleTransition() {
+                screenElement.style.display = 'none';
+                screenElement.removeEventListener('transitionend', handleTransition);
+            }, { once: true });
+        }
+
+        // --- UI Update and Save Functions ---
+
+        function updateUI() {
+            counterElement.textContent = Math.floor(count);
+
+            // Update costs and disable states for all shop items
+            doubleClickCostElement.textContent = Math.floor(doubleClickBaseCost * Math.pow(1.2, doubleClickMultipliers));
+            buyDoubleClickButton.disabled = count < (doubleClickBaseCost * Math.pow(1.2, doubleClickMultipliers));
+            doubleClickCountElement.textContent = doubleClickMultipliers;
+            buyDoubleClickButton.textContent = `Buy (${doubleClickMultipliers})`;
+
+            superBoostCostElement.textContent = Math.floor(superBoostBaseCost * Math.pow(1.3, superBoosts));
+            buySuperBoostButton.disabled = count < (superBoostBaseCost * Math.pow(1.3, superBoosts));
+            superBoostCountElement.textContent = superBoosts;
+            buySuperBoostButton.textContent = `Buy (${superBoosts})`;
+
+            sparklingAuraCostElement.textContent = sparklingAuraCost;
+            buySparklingAuraButton.disabled = hasSparklingAura || count < sparklingAuraCost;
+            buySparklingAuraButton.textContent = hasSparklingAura ? "Already bought!" : "Buy";
+
+            ultimateFemboyOutfitCostElement.textContent = ultimateFemboyOutfitCost;
+            buyUltimateFemboyOutfitButton.disabled = hasUltimateFemboyOutfit || count < ultimateFemboyOutfitCost;
+            buyUltimateFemboyOutfitButton.textContent = hasUltimateFemboyOutfit ? "Already bought!" : "Buy";
+
+            // Mastery UI updates
+            masteryPointsDisplay.textContent = `Mastery Points: ${masteryPoints}`;
+
+            sparkleEfficiencyLevelElement.textContent = sparkleEfficiencyLevel;
+            buySparkleEfficiencyButton.disabled = masteryPoints < 1;
+
+            xpAccumulationLevelElement.textContent = xpAccumulationLevel;
+            buyXpAccumulationButton.disabled = masteryPoints < 1;
+
+            superSparkleChanceLevelElement.textContent = superSparkleChanceLevel;
+            buySuperSparkleChanceButton.disabled = masteryPoints < 2;
+
+            const progressPercentage = (experience / xpToNextLevel) * 100;
+            progressBar.style.width = `${progressPercentage}%`;
+            progressBar.textContent = `${Math.floor(progressPercentage)}%`;
+            levelInfo.textContent = `Level ${level} (${experience} / ${xpToNextLevel})`;
+
+            saveGame();
+        }
+
+        function saveGame() {
+            const gameData = {
+                count: count,
+                clickPower: clickPower,
+                doubleClickMultipliers: doubleClickMultipliers,
+                superBoosts: superBoosts,
+                totalBoostMultiplier: totalBoostMultiplier,
+                level: level,
+                experience: experience,
+                xpToNextLevel: xpToNextLevel,
+                hasSparklingAura: hasSparklingAura,
+                hasUltimateFemboyOutfit: hasUltimateFemboyOutfit,
+                // Mastery System Save Data
+                masteryPoints: masteryPoints,
+                sparkleEfficiencyLevel: sparkleEfficiencyLevel,
+                xpAccumulationLevel: xpAccumulationLevel,
+                superSparkleChanceLevel: superSparkleChanceLevel,
+                lastMasteryLevelAwarded: lastMasteryLevelAwarded
+            };
+            localStorage.setItem('femboyClickerSave', JSON.stringify(gameData));
+        }
+
+        function loadGame() {
+            const savedData = localStorage.getItem('femboyClickerSave');
+            if (savedData) {
+                const gameData = JSON.parse(savedData);
+                count = gameData.count || 0;
+                clickPower = gameData.clickPower || 1;
+                doubleClickMultipliers = gameData.doubleClickMultipliers || 0;
+                superBoosts = gameData.superBoosts || 0;
+                totalBoostMultiplier = gameData.totalBoostMultiplier || 1;
+                level = gameData.level || 1;
+                experience = gameData.experience || 0;
+                xpToNextLevel = gameData.xpToNextLevel || 100;
+                hasSparklingAura = gameData.hasSparklingAura || false;
+                hasUltimateFemboyOutfit = gameData.hasUltimateFemboyOutfit || false;
+                // Mastery System Load Data
+                masteryPoints = gameData.masteryPoints || 0;
+                sparkleEfficiencyLevel = gameData.sparkleEfficiencyLevel || 0;
+                xpAccumulationLevel = gameData.xpAccumulationLevel || 0;
+                superSparkleChanceLevel = gameData.superSparkleChanceLevel || 0;
+                lastMasteryLevelAwarded = gameData.lastMasteryLevelAwarded || 0;
+
+                // Apply outfit bonus on load
+                if (hasUltimateFemboyOutfit) {
+                    clickPower += 5;
+                }
+                // Apply mastery bonuses on load
+                clickPower += sparkleEfficiencyLevel * 0.1;
+                totalBoostMultiplier *= (1 + xpAccumulationLevel * 0.05);
+
+
+                messageElement.textContent = "Game loaded! ✨";
+            } else {
+                messageElement.textContent = "Welcome, new player! ✨";
+            }
+            updateUI();
+        }
+
+        function gainXP(amount) {
+            let xpGain = amount;
+            if (hasSparklingAura) {
+                xpGain = Math.floor(xpGain * 1.5);
+            }
+            xpGain = Math.floor(xpGain * (1 + xpAccumulationLevel * 0.05)); // Apply XP Mastery
+            experience += xpGain;
+            if (experience >= xpToNextLevel) {
+                levelUp();
+            }
+        }
+
+        function levelUp() {
+            level++;
+            experience -= xpToNextLevel;
+            xpToNextLevel = Math.floor(xpToNextLevel * 1.5);
+
+            levelUpMessage.textContent = `Level ${level} reached! 🎉`;
+            levelUpMessage.style.display = 'block';
+            setTimeout(() => {
+                levelUpMessage.style.display = 'none';
+            }, 2000);
+
+            count += (50 * level);
+            messageElement.textContent = `Congratulations, you earned ${50 * level} additional sparkles!`;
+
+            // Check for Mastery Point gain
+            const levelsPassedSinceLastAward = Math.floor(level / MASTERY_POINT_LEVEL_INTERVAL) - Math.floor(lastMasteryLevelAwarded / MASTERY_POINT_LEVEL_INTERVAL);
+            if (levelsPassedSinceLastAward > 0) {
+                masteryPoints += levelsPassedSinceLastAward;
+                lastMasteryLevelAwarded = level;
+                messageElement.textContent = "You gained 1 Mastery Point! 🌟";
+            }
+
+            updateUI();
+        }
+
+        // --- Background Star Effects ---
+        function createStar() {
+            const star = document.createElement('div');
+            star.classList.add('star');
+            const size = Math.random() * 3 + 1;
+            star.style.width = `${size}px`;
+            star.style.height = `${size}px`;
+            star.style.left = `${Math.random() * 100}%`;
+            star.style.top = `${Math.random() * 100}%`;
+            star.style.animationDuration = `${Math.random() * 3 + 2}s`;
+            star.style.animationDelay = `${Math.random() * 5}s`;
+            document.body.appendChild(star);
+
+            star.addEventListener('animationend', () => {
+                star.remove();
+            });
+        }
+
+        for (let i = 0; i < 50; i++) {
+            createStar();
+        }
+        setInterval(createStar, 200);
+
+        // --- Cloud Effects for Title Screen ---
+        function createCloud() {
+            const cloud = document.createElement('div');
+            const sizes = ['small', 'medium', 'large'];
+            const randomSize = sizes[Math.floor(Math.random() * sizes.length)];
+            cloud.classList.add('cloud', randomSize);
+            cloud.style.top = `${Math.random() * 100}%`;
+            cloud.style.left = `${-Math.random() * 100 - 50}%`;
+            document.getElementById('titleScreen').appendChild(cloud);
+
+            cloud.addEventListener('animationend', () => {
+                cloud.remove();
+            });
+        }
+        setInterval(createCloud, 3000);
+
+        // --- Game Start and Navigation Logic ---
+        function startGame() {
+            hideScreen(titleScreen);
+            showScreen(gameContainer, 'flex');
+            loadGame();
+        }
+
+        function showCredits() {
+            hideScreen(titleScreen);
+            showScreen(creditsScreen);
+        }
+
+        function hideCredits() {
+            hideScreen(creditsScreen);
+            showScreen(titleScreen);
+        }
+
+        function showShop() {
+            hideScreen(gameContainer);
+            showScreen(shopOverlay);
+        }
+
+        function hideShop() {
+            hideScreen(shopOverlay);
+            showScreen(gameContainer, 'flex');
+        }
+
+        function showMastery() {
+            hideScreen(gameContainer);
+            showScreen(masteryOverlay);
+        }
+
+        function hideMastery() {
+            hideScreen(masteryOverlay);
+            showScreen(gameContainer, 'flex');
+        }
+
+
+        // --- Reset Progression Logic ---
+        function showResetConfirmation() {
+            resetConfirmationPopup.classList.add('visible');
+        }
+
+        function hideResetConfirmation() {
+            resetConfirmationPopup.classList.remove('visible');
+        }
+
+        function resetGame() {
+            localStorage.clear();
+            hideResetConfirmation();
+            location.reload();
+        }
+
+        // --- Game Events and Logic ---
+        clickButton.addEventListener('click', (event) => {
+            let gainedAmount = clickPower * totalBoostMultiplier;
+            if (superSparkleChanceLevel > 0 && Math.random() < (superSparkleChanceLevel * 0.01)) { // 1% chance per level for bonus
+                gainedAmount *= 2; // Double sparkles for super sparkle
+                messageElement.textContent = "SUPER SPARKLE! ✨✨";
+            } else {
+                messageElement.textContent = "Every click adds sparkle! ✨";
+            }
+
+            count += gainedAmount;
+            gainXP(1 * totalBoostMultiplier);
+
+
+            const clickAnimation = document.createElement('span');
+            clickAnimation.classList.add('click-animation');
+            const rect = clickButton.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            clickAnimation.style.width = clickAnimation.style.height = `${size}px`;
+            clickAnimation.style.left = `${event.clientX - rect.left - size / 2}px`;
+            clickAnimation.style.top = `${event.clientY - rect.top - size / 2}px`;
+            clickButton.appendChild(clickAnimation);
+            clickAnimation.addEventListener('animationend', () => {
+                clickAnimation.remove();
+            });
+
+            const particleCount = Math.floor(gainedAmount / 5) + 1;
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                const particleSize = Math.random() * 10 + 5;
+                particle.style.width = `${particleSize}px`;
+                particle.style.height = `${particleSize}px`;
+                particle.style.left = `${event.clientX + (Math.random() - 0.5) * 50}px`;
+                particle.style.top = `${event.clientY + (Math.random() - 0.5) * 50}px`;
+                document.body.appendChild(particle);
+                particle.addEventListener('animationend', () => {
+                    particle.remove();
+                });
+            }
+
+            if (Math.random() < 0.2) {
+                const sparkle = document.createElement('div');
+                sparkle.classList.add('sparkle');
+                const sparkleSize = Math.random() * 20 + 10;
+                sparkle.style.width = `${sparkleSize}px`;
+                sparkle.style.height = `${sparkleSize}px`;
+                const counterRect = counterElement.getBoundingClientRect();
+                sparkle.style.left = `${counterRect.left + counterRect.width / 2 + (Math.random() - 0.5) * 40}px`;
+                sparkle.style.top = `${counterRect.top + counterRect.height / 2 + (Math.random() - 0.5) * 40}px`;
+                document.body.appendChild(sparkle);
+                sparkle.addEventListener('animationend', () => {
+                    sparkle.remove();
+                });
+            }
+
+            updateUI();
+        });
+
+        buyDoubleClickButton.addEventListener('click', () => {
+            const cost = doubleClickBaseCost * Math.pow(1.2, doubleClickMultipliers);
+            if (count >= cost) {
+                count -= cost;
+                doubleClickMultipliers++;
+                clickPower++;
+                messageElement.textContent = "Double Click purchased! 💖";
+                updateUI();
+            } else {
+                messageElement.textContent = "Not enough sparkles! 💔";
+            }
+        });
+
+        buySuperBoostButton.addEventListener('click', () => {
+            const cost = superBoostBaseCost * Math.pow(1.3, superBoosts);
+            if (count >= cost) {
+                count -= cost;
+                superBoosts++;
+                totalBoostMultiplier *= 1.10;
+                messageElement.textContent = "Super Boost activated! 🎉";
+                updateUI();
+            } else {
+                messageElement.textContent = "Not enough sparkles! 💔";
+            }
+        });
+
+        buySparklingAuraButton.addEventListener('click', () => {
+            if (!hasSparklingAura && count >= sparklingAuraCost) {
+                count -= sparklingAuraCost;
+                hasSparklingAura = true;
+                messageElement.textContent = "Sparkling Aura activated! ✨";
+                updateUI();
+            } else if (hasSparklingAura) {
+                messageElement.textContent = "Already bought!";
+            } else {
+                messageElement.textContent = "Not enough sparkles! 💔";
+            }
+        });
+
+        buyUltimateFemboyOutfitButton.addEventListener('click', () => {
+            if (!hasUltimateFemboyOutfit && count >= ultimateFemboyOutfitCost) {
+                count -= ultimateFemboyOutfitCost;
+                hasUltimateFemboyOutfit = true;
+                clickPower += 5;
+                messageElement.textContent = "Ultimate Femboy Outfit acquired! 👑";
+                updateUI();
+            } else if (hasUltimateFemboyOutfit) {
+                messageElement.textContent = "Already bought!";
+            } else {
+                messageElement.textContent = "Not enough sparkles! 💔";
+            }
+        });
+
+        // Mastery Button Event Listeners
+        buySparkleEfficiencyButton.addEventListener('click', () => {
+            if (masteryPoints >= 1) {
+                masteryPoints--;
+                sparkleEfficiencyLevel++;
+                clickPower += 0.1; // Permanent +0.1 to base click power
+                messageElement.textContent = "Sparkle Efficiency upgraded!";
+                updateUI();
+            } else {
+                messageElement.textContent = "Not enough Mastery Points! 💔";
+            }
+        });
+
+        buyXpAccumulationButton.addEventListener('click', () => {
+            if (masteryPoints >= 1) {
+                masteryPoints--;
+                xpAccumulationLevel++;
+                // XP gain calculation already uses xpAccumulationLevel, no direct change here
+                messageElement.textContent = "XP Accumulation upgraded!";
+                updateUI();
+            } else {
+                messageElement.textContent = "Not enough Mastery Points! 💔";
+            }
+        });
+
+        buySuperSparkleChanceButton.addEventListener('click', () => {
+            if (masteryPoints >= 2) {
+                masteryPoints -= 2;
+                superSparkleChanceLevel++;
+                messageElement.textContent = "Super Sparkle Chance upgraded!";
+                updateUI();
+            } else {
+                messageElement.textContent = "Not enough Mastery Points! 💔";
+            }
+        });
+
+
+        // --- Initialization on page load ---
+        (function() {
+            gameContainer.style.display = 'none';
+            creditsScreen.classList.add('hidden');
+            shopOverlay.classList.add('hidden');
+            masteryOverlay.classList.add('hidden'); // Hide mastery overlay
+            resetConfirmationPopup.classList.add('hidden');
+            titleScreen.classList.remove('hidden');
+        })();
+
+        shopButton.addEventListener('click', showShop);
+        masteryButton.addEventListener('click', showMastery);
+    </script>
+</body>
+</html>
